@@ -1,5 +1,3 @@
-#ifdef USE_ARDUINO
-
 #include "web_server.h"
 
 #include "esphome/core/log.h"
@@ -9,7 +7,9 @@
 #include "esphome/components/json/json_util.h"
 #include "esphome/components/network/util.h"
 
+#ifdef USE_ARDUINO
 #include "StreamString.h"
+#endif
 
 #include <cstdlib>
 
@@ -151,7 +151,7 @@ void WebServer::handle_index_request(AsyncWebServerRequest *request) {
   stream->print(F("<link rel=\"stylesheet\" href=\"/0.css\">"));
 #endif
   if (strlen(this->css_url_) > 0) {
-    stream->print(F("<link rel=\"stylesheet\" href=\""));
+    stream->print(F(R"(<link rel="stylesheet" href=")"));
     stream->print(this->css_url_);
     stream->print(F("\">"));
   }
@@ -501,9 +501,6 @@ void WebServer::handle_fan_request(AsyncWebServerRequest *request, const UrlMatc
       request->send(200);
     } else if (match.method == "turn_on") {
       auto call = obj->turn_on();
-      if (request->hasParam("speed")) {
-        String speed = request->getParam("speed")->value();
-      }
       if (request->hasParam("speed_level")) {
         String speed_level = request->getParam("speed_level")->value();
         auto val = parse_number<int>(speed_level.c_str());
@@ -1156,5 +1153,3 @@ bool WebServer::isRequestHandlerTrivial() { return false; }
 
 }  // namespace web_server
 }  // namespace esphome
-
-#endif  // USE_ARDUINO

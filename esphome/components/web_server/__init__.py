@@ -74,7 +74,6 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_LOCAL): cv.boolean,
         }
     ).extend(cv.COMPONENT_SCHEMA),
-    cv.only_with_arduino,
     default_url,
     validate_local,
 )
@@ -95,7 +94,8 @@ async def to_code(config):
     cg.add_define("USE_WEBSERVER_VERSION", config[CONF_VERSION])
     cg.add(var.set_css_url(config[CONF_CSS_URL]))
     cg.add(var.set_js_url(config[CONF_JS_URL]))
-    cg.add(var.set_allow_ota(config[CONF_OTA]))
+    if CORE.using_arduino:
+        cg.add(var.set_allow_ota(config[CONF_OTA]))
     if CONF_AUTH in config:
         cg.add(paren.set_auth_username(config[CONF_AUTH][CONF_USERNAME]))
         cg.add(paren.set_auth_password(config[CONF_AUTH][CONF_PASSWORD]))
