@@ -1,12 +1,14 @@
 #pragma once
 
-#ifdef USE_ARDUINO
-
 #include <memory>
 #include <utility>
 #include "esphome/core/component.h"
 
+#ifdef USE_ARDUINO
 #include <ESPAsyncWebServer.h>
+#elif USE_ESP_IDF
+#include "esphome/components/web_server_idf/web_server_idf.h"
+#endif
 
 namespace esphome {
 namespace web_server_base {
@@ -138,5 +140,3 @@ class OTARequestHandler : public AsyncWebHandler {
 
 }  // namespace web_server_base
 }  // namespace esphome
-
-#endif  // USE_ARDUINO
