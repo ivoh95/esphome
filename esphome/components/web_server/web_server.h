@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef USE_ARDUINO
+
 #include "list_entities.h"
 
 #include "esphome/components/web_server_base/web_server_base.h"
@@ -232,3 +234,5 @@ class WebServer : public Controller, public Component, public AsyncWebHandler {
 
 }  // namespace web_server
 }  // namespace esphome
+
+#endif  // USE_ARDUINO
