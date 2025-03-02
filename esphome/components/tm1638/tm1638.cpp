@@ -13,8 +13,9 @@ static const uint8_t TM1638_REGISTER_AUTOADDRESS = 0x40;
 static const uint8_t TM1638_REGISTER_READBUTTONS = 0x42;
 static const uint8_t TM1638_REGISTER_DISPLAYOFF = 0x80;
 static const uint8_t TM1638_REGISTER_DISPLAYON = 0x88;
-static const uint8_t TM1638_REGISTER_7SEG_0 = 0xC0;
-static const uint8_t TM1638_REGISTER_LED_0 = 0xC1;
+static const uint8_t TM1638_REGISTER_DISPLAYMODE = 0x02;
+static const uint8_t TM1638_REGISTER_7SEG_0 = 0xC6;
+static const uint8_t TM1638_REGISTER_LED_0 = 0xC8;
 static const uint8_t TM1638_UNKNOWN_CHAR = 0b11111111;
 
 static const uint8_t TM1638_SHIFT_DELAY = 4;  // clock pause between commands, default 4ms
@@ -94,8 +95,13 @@ void TM1638Component::update() {  // this is called at the interval specified in
 float TM1638Component::get_setup_priority() const { return setup_priority::PROCESSOR; }
 
 void TM1638Component::display() {
-  for (uint8_t i = 0; i < 8; i++) {
+
+  for (uint8_t i = 0; i < 2; i++) { //first digit
     this->set_7seg_(i, buffer_[i]);
+  }
+
+  for (uint8_t i = 4; i < 6; i++) { //second digit
+    this->set_7seg_(i, buffer_[i-3]);
   }
 }
 
@@ -117,7 +123,7 @@ void TM1638Component::set_led(int led_pos, bool led_on_off) {
 
   uint8_t commands[2];
 
-  commands[0] = TM1638_REGISTER_LED_0 + (led_pos << 1);
+  commands[0] = TM1638_REGISTER_LED_0 + (led_pos);
   commands[1] = led_on_off;
 
   this->send_commands_(commands, 2);
@@ -128,7 +134,10 @@ void TM1638Component::set_7seg_(int seg_pos, uint8_t seg_bits) {
 
   uint8_t commands[2] = {};
 
-  commands[0] = TM1638_REGISTER_7SEG_0 + (seg_pos << 1);
+  commands[0] = TM1638_REGISTER_7SEG_0 + (seg_pos);
+  if (commands[0] == 0xC8){
+    return; 
+  }
   commands[1] = seg_bits;
 
   this->send_commands_(commands, 2);
@@ -137,6 +146,7 @@ void TM1638Component::set_7seg_(int seg_pos, uint8_t seg_bits) {
 void TM1638Component::set_intensity(uint8_t brightness_level) {
   this->intensity_ = brightness_level;
 
+  this->send_command_(TM1638_REGISTER_DISPLAYMODE);
   this->send_command_(TM1638_REGISTER_FIXEDADDRESS);
 
   if (brightness_level > 0) {
@@ -151,8 +161,6 @@ void TM1638Component::set_intensity(uint8_t brightness_level) {
 uint8_t TM1638Component::print(uint8_t start_pos, const char *str) {
   uint8_t pos = start_pos;
 
-  bool last_was_dot = false;
-
   for (; *str != '\0'; str++) {
     uint8_t data = TM1638_UNKNOWN_CHAR;
 
@@ -162,24 +170,12 @@ uint8_t TM1638Component::print(uint8_t start_pos, const char *str) {
       ESP_LOGW(TAG, "Encountered character '%c' with no TM1638 representation while translating string!", *str);
     }
 
-    if (*str == '.')  // handle dots
-    {
-      if (pos != start_pos &&
-          !last_was_dot)  // if we are not at the first position, backup by one unless last char was a dot
-      {
-        pos--;
-      }
-      this->buffer_[pos] |= 0b10000000;  // turn on the dot on the previous position
-      last_was_dot = true;               // set a bit in case the next chracter is also a dot
-    } else                               // if not a dot, then just write the character to display
-    {
-      if (pos >= 8) {
-        ESP_LOGI(TAG, "TM1638 String is too long for the display!");
-        break;
-      }
-      this->buffer_[pos] = data;
-      last_was_dot = false;  // clear dot tracking bit
+    if (pos >= 8) {
+      ESP_LOGI(TAG, "TM1638 String is too long for the display!");
+      break;
     }
+    this->buffer_[pos] = (data & 0xF8) + (this->buffer_[pos] & 0x07);
+    this->buffer_[pos+1] = data & 0x07;
 
     pos++;
   }
