@@ -12,7 +12,7 @@ CONFIG_SCHEMA = switch.SWITCH_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(TM1638SwitchLed),
         cv.GenerateID(CONF_TM1638_ID): cv.use_id(TM1638Component),
-        cv.Required(CONF_LED): cv.int_range(min=0, max=15),
+        cv.Required(CONF_LED): cv.int_range(min=0, max=128),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
